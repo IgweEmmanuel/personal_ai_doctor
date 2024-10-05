@@ -1,7 +1,7 @@
 Flask==2.2.3
 Werkzeug>=2.2.2,<3.0
-accelerate==0.28.0
-bitsandbytes==0.42.0
+accelerate
+bitsandbytes
 peft
 bagelML
 --extra-index-url https://download.pytorch.org/whl/cu118
@@ -10,3 +10,4 @@ torchvision
 torchaudio
 diffusers==0.27.1
 transformers==4.35.2
+"numpy<2"
