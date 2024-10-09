@@ -1,5 +1,13 @@
 from modal import Image, Mount, gpu, App, asgi_app
 from peft import PeftModel, PeftConfig
+from fastapi import FastAPI, Request
+import torch
+from fastapi.middleware.cors import CORSMiddleware
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from peft import PeftModel, PeftConfig
+import os
+import bagel
+import zipfile
 
 app = App("llama3-chatbot-test")  # Renamed from modal_app to app
 
@@ -26,18 +34,18 @@ image = (
     container_idle_timeout=1200,
     keep_warm=1
 )
+
 @asgi_app()
 def fastapi_app():
-    from fastapi import FastAPI, Request
-    import torch
-    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-    from peft import PeftModel, PeftConfig
-    import os
-    import bagel
-    import zipfile
 
     api = FastAPI()
-    
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Replace with your React app URL in production
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )    
     # Check CUDA availability
     print(f"CUDA available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
@@ -88,7 +96,9 @@ def fastapi_app():
         device_map="auto",
         trust_remote_code=True
     )
-
+    # Debugging
+    print(f"Base model type: {type(base_model)}")
+    print(f"Adapter path: {adapter_path}")
     # Load the PEFT model (adapter)
     model = PeftModel.from_pretrained(base_model, adapter_path)
 
@@ -96,9 +106,13 @@ def fastapi_app():
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 
     @api.post("/generate")
-    async def generate(request: Request):
+    async def generate(request: Request, message: str):
         data = await request.json()
-        prompt = data['prompt']
+
+        if message:
+            prompt = message
+        else:
+            prompt = data.get('message')
 
         # Generate response
         inputs = tokenizer(prompt, return_tensors="pt").to(model.device)

@@ -10,4 +10,6 @@ torchvision
 torchaudio
 diffusers==0.27.1
 transformers==4.35.2
-"numpy<2"
+numpy
+fastapi
+uvicorn
